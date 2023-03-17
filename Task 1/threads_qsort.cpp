@@ -52,8 +52,8 @@ int main() {
 
 
 	test = {1, 888, 34, 456, 23, 12, 1, 1, 34, 2, 5, 2, 5, 4, 6, 5, 4};
-	for (int i = 0; i < 1000000; i++){
-        test1.push_back(1 + rand() % 1000);
+	for (int i = 0; i < 10000000; i++){
+        test1.push_back(1 + rand() % 1000000000);
 	}
 
 	q_sort(test1, 0, test1.size() - 1, 0);
