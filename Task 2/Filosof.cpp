@@ -6,18 +6,36 @@
 
 using namespace std;
 
-const int numPhilosophers = 5;
-const int maxEatingCount = 5; // Максимальное количество еды для каждого философа
+const int numPhilosophers = 20;
+const int maxEatingCount = 20; // Максимальное количество еды для каждого философа
 
 mutex forks[numPhilosophers];
 mutex outputMutex;
 
-int eatCount[numPhilosophers] = { 0 };
+int eatCount[numPhilosophers];
 
 void printMessage(string message)
 {
     lock_guard<mutex> lock(outputMutex);
     osyncstream(cout) << message << endl;
+}
+
+void printProgress(int id)
+{
+    // Выводим шкалу прогресса после окончания итерации
+    lock_guard<mutex> lock(outputMutex);
+    float progress = static_cast<float>(eatCount[id]) / maxEatingCount;
+    osyncstream(cout) << "Progress of Philosopher " << id << ": ";
+    int filledCount = static_cast<int>(progress * 20);
+    for (int j = 0; j < filledCount; j++)
+    {
+        osyncstream(cout) << "*";
+    }
+    for (int j = filledCount; j < 20; j++)
+    {
+        osyncstream(cout) << "-";
+    }
+    osyncstream(cout) << endl;
 }
 
 void philosopher(int id)
@@ -31,37 +49,55 @@ void philosopher(int id)
         // Философ размышляет
         printMessage("Philosopher " + to_string(id) + " is thinking.");
         this_thread::sleep_for(chrono::seconds(1));
-        // Философ голоден и пытается взять вилки
-        lock(leftLock, rightLock);
+        // Философ голоден и пытается взять вилки 
         printMessage("Philosopher " + to_string(id) + " is hungry.");
+        lock(leftLock, rightLock);
         // Философ ест
         printMessage("Philosopher " + to_string(id) + " is eating.");
         this_thread::sleep_for(chrono::seconds(1));
         eatCount[id]++;
-        // Выводим шкалу прогресса после окончания итерации
-        lock_guard<mutex> lock(outputMutex);
-        float progress = static_cast<float>(eatCount[id]) / maxEatingCount;
-        osyncstream(cout) << "Progress of Philosopher " << id << ": ";
-        int filledCount = static_cast<int>(progress * 20);
-        for (int j = 0; j < filledCount; j++)
-        {
-            osyncstream(cout) << "*";
-        }
-        for (int j = filledCount; j < 20; j++)
-        {
-            osyncstream(cout) << "-";
-        }
-        osyncstream(cout) << endl;
+        printProgress(id);
+        // Освобождаем вилки
+        leftLock.unlock();
+        rightLock.unlock();
         // Проверяем, завершил ли философ все приемы пищи
         if (eatCount[id] >= maxEatingCount)
         {
             break;
         }
-        // Освобождаем вилки
-        leftLock.unlock();
-        rightLock.unlock();
     }
 }
+
+//void philosopher(int id) 
+//{
+//    int leftFork = id;
+//    int rightFork = (id + 1) % numPhilosophers;
+//    while (true) 
+//    {
+//        this_thread::sleep_for(chrono::seconds(1));
+//        if (!forks[leftFork].try_lock())
+//        {
+//            printMessage("Philosopher " + to_string(id) + " is thinking.");
+//            continue;
+//        }
+//        if (!forks[rightFork].try_lock()) 
+//        {
+//            forks[leftFork].unlock();
+//            printMessage("Philosopher " + to_string(id) + " is thinking.");
+//            continue;
+//        }
+//        printMessage("Philosopher " + to_string(id) + " is eating.");
+//        this_thread::sleep_for(chrono::seconds(1));
+//        eatCount[id]++;
+//        printProgress(id);
+//        forks[leftFork].unlock();
+//        forks[rightFork].unlock();
+//        if (eatCount[id] >= maxEatingCount)
+//        {
+//            break;
+//        }
+//    }
+//}
 
 int main()
 {
